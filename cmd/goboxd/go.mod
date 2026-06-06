@@ -1,4 +1,4 @@
-module example.com
+module kripto-geek/goboxd
 
 go 1.26.2
 
