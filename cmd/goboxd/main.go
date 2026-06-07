@@ -5,12 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Request struct {
 	Source string `json:"source"`
+	Stdin  string `json:"stdin"`
 }
 
 func main() {
@@ -44,9 +46,14 @@ func RunHandler(c *gin.Context) {
 
 	exec := exec.Command("python3", "sol.py")
 
+	exec.Stdin = strings.NewReader(req.Stdin)
+
 	exec.Dir = dir
 
 	output, err := exec.CombinedOutput()
+	if err != nil {
+		return
+	}
 
 	c.JSON(200, gin.H{
 		"output": string(output),
