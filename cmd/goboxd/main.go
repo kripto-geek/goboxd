@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,4 +30,25 @@ func RunHandler(c *gin.Context) {
 		return
 	}
 	fmt.Println(req.Source)
+
+	dir, err := os.MkdirTemp("", "goboxd-*")
+	if err != nil {
+		return
+	}
+
+	defer os.RemoveAll(dir)
+
+	sourcePath := filepath.Join(dir, "sol.py")
+
+	os.WriteFile(sourcePath, []byte(req.Source), 0644)
+
+	exec := exec.Command("python3", "sol.py")
+
+	exec.Dir = dir
+
+	output, err := exec.CombinedOutput()
+
+	c.JSON(200, gin.H{
+		"output": string(output),
+	})
 }
