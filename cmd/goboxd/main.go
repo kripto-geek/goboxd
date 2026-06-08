@@ -13,8 +13,13 @@ import (
 )
 
 type Request struct {
-	Source string `json:"source"`
-	Stdin  string `json:"stdin"`
+	Source string     `json:"source"`
+	Tests  []TestPart `json:"tests"`
+}
+
+type TestPart struct {
+	Stdin    string `json:"stdin"`
+	Expected string `json:"expected"`
 }
 
 func main() {
@@ -46,22 +51,38 @@ func RunHandler(c *gin.Context) {
 
 	os.WriteFile(sourcePath, []byte(req.Source), 0644)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	for _, test := range req.Tests {
 
-	defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
-	exec := exec.CommandContext(ctx, "python3", "sol.py")
+		cmd := exec.CommandContext(ctx, "python3", "sol.py")
 
-	exec.Stdin = strings.NewReader(req.Stdin)
+		cmd.Stdin = strings.NewReader(test.Stdin)
 
-	exec.Dir = dir
+		cmd.Dir = dir
 
-	output, err := exec.CombinedOutput()
-	if err != nil {
-		return
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			cancel()
+			return
+		}
+		cancel()
+		ActualOutput := strings.TrimSpace(string(output))
+		ExpectedOutput := strings.TrimSpace(string(test.Expected))
+
+		fmt.Print(ActualOutput)
+		fmt.Print(ExpectedOutput)
+
+		if ActualOutput != ExpectedOutput {
+			c.JSON(200, gin.H{
+				"output":   "Wrong Answer",
+				"expected": ExpectedOutput,
+				"acutal":   ActualOutput,
+			})
+			return
+		}
 	}
-
 	c.JSON(200, gin.H{
-		"output": string(output),
+		"result": "Tests Success!",
 	})
 }
