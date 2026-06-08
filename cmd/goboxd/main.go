@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,7 +46,11 @@ func RunHandler(c *gin.Context) {
 
 	os.WriteFile(sourcePath, []byte(req.Source), 0644)
 
-	exec := exec.Command("python3", "sol.py")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	exec := exec.CommandContext(ctx, "python3", "sol.py")
 
 	exec.Stdin = strings.NewReader(req.Stdin)
 
