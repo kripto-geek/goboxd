@@ -23,6 +23,8 @@ type TestPart struct {
 	Expected string `json:"expected"`
 }
 
+var sem = make(chan struct{}, 5)
+
 func main() {
 	r := gin.Default()
 
@@ -143,6 +145,9 @@ func RunHandler(c *gin.Context) {
 	}
 	fmt.Println(req.Source)
 	fmt.Println(req.Language)
+
+	sem <- struct{}{}
+	defer func() { <-sem }()
 
 	switch req.Language {
 
